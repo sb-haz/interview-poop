@@ -36,12 +36,12 @@ const InterviewSession: NextPage = () => {
   const [userSpeaking, setUserSpeaking] = useState<boolean>(false)
   const [interviewerTranscript, setInterviewerTranscript] = useState<string>('')
   const [userTranscript, setUserTranscript] = useState<string>('')
-  const [interviewerName, setInterviewerName] = useState<string>("AI Interviewer")
+  const [interviewerName] = useState<string>("AI Interviewer")
   const [micEnabled, setMicEnabled] = useState<boolean>(true)
   const [videoEnabled, setVideoEnabled] = useState<boolean>(false)
   const [callActive, setCallActive] = useState<boolean>(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
-  const [interviewType, setInterviewType] = useState<string>("Technical")
+  const [interviewType] = useState<string>("Technical")
   const [showHints, setShowHints] = useState<boolean>(true)
   const [isTypingHints, setIsTypingHints] = useState<boolean>(false)
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false)
@@ -65,7 +65,7 @@ const InterviewSession: NextPage = () => {
   useEffect(() => {
     if (!callActive) return
     
-    let timeoutIds: NodeJS.Timeout[] = []
+    const timeoutIds: NodeJS.Timeout[] = []
     
     // Auto-start the interview cycle
     const askQuestion = async () => {
@@ -388,7 +388,7 @@ const InterviewSession: NextPage = () => {
                 {/* Right column: Interviewer's Question */}
                 <div className="w-full md:w-3/5 p-6 flex items-center">
                   <div className="bg-gradient-to-br from-slate-50 to-white p-5 rounded-2xl w-full border border-blue-50 shadow-sm overflow-y-auto hide-scrollbar">
-                    <h3 className="font-medium text-slate-400 text-sm mb-2 uppercase tracking-wide">Interviewer's Question</h3>
+                    <h3 className="font-medium text-slate-400 text-sm mb-2 uppercase tracking-wide">Interviewer&apos;s Question</h3>
                     <p className="text-slate-800 font-medium leading-relaxed">
                       {interviewerTranscript || "Interviewer is about to ask a question..."}
                     </p>

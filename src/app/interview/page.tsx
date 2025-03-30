@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Settings, Atom, Clock, PanelLeft, Eye, EyeOff, Repeat, ChevronLeft } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Settings, Atom, Clock, PanelLeft, Eye, EyeOff, Repeat } from 'lucide-react'
 import type { NextPage } from 'next'
 
 // Add custom styles for hiding scrollbar

@@ -37,8 +37,8 @@ const InterviewSession: NextPage = () => {
   const [interviewerTranscript, setInterviewerTranscript] = useState<string>('')
   const [userTranscript, setUserTranscript] = useState<string>('')
   const [interviewerName, setInterviewerName] = useState<string>("AI Interviewer")
-  const [micEnabled, setMicEnabled] = useState<boolean>(false)
-  const [videoEnabled, setVideoEnabled] = useState<boolean>(true)
+  const [micEnabled, setMicEnabled] = useState<boolean>(true)
+  const [videoEnabled, setVideoEnabled] = useState<boolean>(false)
   const [callActive, setCallActive] = useState<boolean>(true)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false)
   const [interviewType, setInterviewType] = useState<string>("Technical")
@@ -84,13 +84,14 @@ const InterviewSession: NextPage = () => {
         videoRef.current.play()
       }
       
-      // Type out question over 8 seconds
-      const typingDelay = 8000 / question.length
-      for (let i = 0; i <= question.length; i++) {
+      // Type out question word by word over 8 seconds
+      const words = question.split(' ')
+      const wordTypingDelay = 7300 / words.length // Distribute 8 seconds across all words
+      for (let i = 0; i <= words.length; i++) {
         if (!callActive) break
         const id = setTimeout(() => {
-          setInterviewerTranscript(question.slice(0, i))
-        }, i * typingDelay)
+          setInterviewerTranscript(words.slice(0, i).join(' '))
+        }, i * wordTypingDelay)
         timeoutIds.push(id)
       }
       
@@ -146,11 +147,14 @@ const InterviewSession: NextPage = () => {
         
         const userResponse = "Yes, at my previous company we migrated from on-prem to AWS over about 6 months. We primarily used ECS for containerization, RDS for databases, and S3 for storage. The main challenge was ensuring zero downtime, which we solved with a phased approach using Route 53 for traffic management."
         
-        for (let i = 0; i <= userResponse.length; i++) {
+        // Type out user response word by word
+        const userWords = userResponse.split(' ')
+        const userWordDelay = userResponse.length * 30 / userWords.length // Slower response
+        for (let i = 0; i <= userWords.length; i++) {
           const userId = setTimeout(() => {
             if (!callActive) return
-            setUserTranscript(userResponse.slice(0, i))
-          }, i * 20)
+            setUserTranscript(userWords.slice(0, i).join(' '))
+          }, i * userWordDelay)
           timeoutIds.push(userId)
         }
         

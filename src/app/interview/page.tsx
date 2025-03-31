@@ -15,6 +15,27 @@ const hideScrollbarStyle = `
   }
 `;
 
+// Configuration variables - CONTROL ALL TIMING FROM HERE
+const CONFIG = {
+  // Video durations
+  INTERVIEWER_VIDEO_DURATION: 6800,      // How long the interviewer video plays in ms 6800
+  INTERVIEWEE_VIDEO_DURATION: 10000,     // How long the interviewee video plays in ms
+  
+  // Text typing speeds
+  QUESTION_TYPING_DURATION: 7300,        // Total ms to type out the entire question
+  ANSWER_TYPING_DURATION: 9800,          // Total ms to type out the entire answer
+  ANSWER_TYPING_SPEED: 30,               // Characters per second for answer typing
+  ANSWER_TYPING_MULTIPLIER: 30,          // Speed multiplier for answer typing (higher = slower)
+  
+  // Pause timings
+  PAUSE_AFTER_QUESTION: 1000,            // Pause after question before answer starts (1 second)
+  PAUSE_AFTER_ANSWER: 4000,              // Pause after answer before next question cycle
+  
+  // Hint timing
+  HINTS_TYPING_CHAR_DELAY: 5,            // Delay per character when typing hints (ms)
+  HINTS_START_DELAY: 8100                // Delay before hints start typing (ms)
+};
+
 type InterviewQuestions = string[]
 
 const mockQuestions: InterviewQuestions = [
@@ -32,6 +53,7 @@ const questionHints = [
 ];
 
 const InterviewSession: NextPage = () => {
+  // Component state variables
   const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(false)
   const [userSpeaking, setUserSpeaking] = useState<boolean>(false)
   const [interviewerTranscript, setInterviewerTranscript] = useState<string>('')
@@ -45,6 +67,7 @@ const InterviewSession: NextPage = () => {
   const [showHints, setShowHints] = useState<boolean>(true)
   const [isTypingHints, setIsTypingHints] = useState<boolean>(false)
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false)
+  const [intervieweeAudioEnabled, setIntervieweeAudioEnabled] = useState<boolean>(false)
   const [currentHints, setCurrentHints] = useState({
     tips: [""]
   })
@@ -62,35 +85,13 @@ const InterviewSession: NextPage = () => {
     }
   }
   
-  // Handle user video
-  useEffect(() => {
-    if (videoEnabled && userVideoRef.current) {
-      // Request both audio and video for a complete webcam experience
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          if (userVideoRef.current) {
-            userVideoRef.current.srcObject = stream;
-            // Ensure the video plays after setting the source
-            userVideoRef.current.play().catch(e => console.error("Error playing video:", e));
-          }
-        })
-        .catch(err => {
-          console.error("Error accessing webcam:", err);
-          // Show an alert if permission is denied
-          if (err.name === "NotAllowedError") {
-            alert("Camera access denied. Please enable camera permissions for this site.");
-          }
-        });
+  // Function to handle interviewee video click - enables audio only
+  const handleIntervieweeVideoClick = () => {
+    setIntervieweeAudioEnabled(true)
+    if (userVideoRef.current) {
+      userVideoRef.current.muted = false
     }
-    
-    return () => {
-      // Clean up video stream
-      if (userVideoRef.current && userVideoRef.current.srcObject) {
-        const stream = userVideoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [videoEnabled]);
+  }
   
   // Simulate interview flow
   useEffect(() => {
@@ -109,15 +110,15 @@ const InterviewSession: NextPage = () => {
       setInterviewerSpeaking(true)
       const question = mockQuestions[0] // Always use the AWS migration question
       
-      // Play video
+      // Play interviewer video
       if (videoRef.current) {
         videoRef.current.currentTime = 0
         videoRef.current.play()
       }
       
-      // Type out question word by word over 8 seconds
+      // Type out question word by word
       const words = question.split(' ')
-      const wordTypingDelay = 7300 / words.length // Distribute 8 seconds across all words
+      const wordTypingDelay = CONFIG.QUESTION_TYPING_DURATION / words.length
       for (let i = 0; i <= words.length; i++) {
         if (!callActive) break
         const id = setTimeout(() => {
@@ -130,7 +131,7 @@ const InterviewSession: NextPage = () => {
       const speakingEndId = setTimeout(() => {
         setInterviewerSpeaking(false)
         
-        // Pause video
+        // Pause interviewer video
         if (videoRef.current) {
           videoRef.current.pause()
         }
@@ -142,7 +143,50 @@ const InterviewSession: NextPage = () => {
         setCurrentHints({
           tips: [""]
         })
-      }, 6800)
+        
+        // Schedule interviewee to start speaking after PAUSE_AFTER_QUESTION
+        const userStartId = setTimeout(() => {
+          setUserSpeaking(true)
+          
+          // Play interviewee video
+          if (userVideoRef.current) {
+            userVideoRef.current.currentTime = 0
+            userVideoRef.current.play()
+          }
+          
+          const userResponse = "Yes, at my previous company we migrated from on-prem to AWS over about 6 months. We primarily used ECS for containerization"
+          // RDS for databases, and S3 for storage. The main challenge was ensuring zero downtime, which we solved with a phased approach using Route 53 for traffic management."
+          
+          // Type out user response word by word
+          const userWords = userResponse.split(' ')
+          const userWordDelay = CONFIG.ANSWER_TYPING_DURATION / userWords.length
+          for (let i = 0; i <= userWords.length; i++) {
+            const userId = setTimeout(() => {
+              if (!callActive) return
+              setUserTranscript(userWords.slice(0, i).join(' '))
+            }, i * userWordDelay)
+            timeoutIds.push(userId)
+          }
+          
+          // User finishes speaking
+          const userEndId = setTimeout(() => {
+            setUserSpeaking(false)
+            
+            // Pause interviewee video
+            if (userVideoRef.current) {
+              userVideoRef.current.pause()
+            }
+            
+            // Wait configured time before starting next question
+            const restartId = setTimeout(() => {
+              askQuestion() // Restart the cycle
+            }, CONFIG.PAUSE_AFTER_ANSWER)
+            timeoutIds.push(restartId)
+          }, CONFIG.INTERVIEWEE_VIDEO_DURATION)
+          timeoutIds.push(userEndId)
+        }, CONFIG.PAUSE_AFTER_QUESTION)
+        timeoutIds.push(userStartId)
+      }, CONFIG.INTERVIEWER_VIDEO_DURATION)
       timeoutIds.push(speakingEndId)
       
       // Type out hints progressively
@@ -160,48 +204,17 @@ const InterviewSession: NextPage = () => {
                   ...prev.tips.slice(i + 1)
                 ]
               }))
-            }, (i * hints.tips[i].length * 5) + (j * 5))
+            }, (i * hints.tips[i].length * CONFIG.HINTS_TYPING_CHAR_DELAY) + (j * CONFIG.HINTS_TYPING_CHAR_DELAY))
             timeoutIds.push(hintId)
           }
         }
         
         const hintEndId = setTimeout(() => {
           setIsTypingHints(false)
-        }, hints.tips.reduce((acc, tip) => acc + tip.length * 5, 0) + 100)
+        }, hints.tips.reduce((acc, tip) => acc + tip.length * CONFIG.HINTS_TYPING_CHAR_DELAY, 0) + 100)
         timeoutIds.push(hintEndId)
-      }, 8100)
+      }, CONFIG.HINTS_START_DELAY)
       timeoutIds.push(hintsStartId)
-      
-      // User's turn to speak (simulated response) after 1s delay
-      const userStartId = setTimeout(() => {
-        setUserSpeaking(true)
-        
-        const userResponse = "Yes, at my previous company we migrated from on-prem to AWS over about 6 months. We primarily used ECS for containerization, RDS for databases, and S3 for storage. The main challenge was ensuring zero downtime, which we solved with a phased approach using Route 53 for traffic management."
-        
-        // Type out user response word by word
-        const userWords = userResponse.split(' ')
-        const userWordDelay = userResponse.length * 30 / userWords.length // Slower response
-        for (let i = 0; i <= userWords.length; i++) {
-          const userId = setTimeout(() => {
-            if (!callActive) return
-            setUserTranscript(userWords.slice(0, i).join(' '))
-          }, i * userWordDelay)
-          timeoutIds.push(userId)
-        }
-        
-        // User finishes speaking
-        const userEndId = setTimeout(() => {
-          setUserSpeaking(false)
-          
-          // Wait 4 seconds total before starting next question (2 seconds was already in original code + 2 more)
-          const restartId = setTimeout(() => {
-            askQuestion() // Restart the cycle
-          }, 4000) // 4-second pause instead of original 2 seconds
-          timeoutIds.push(restartId)
-        }, userResponse.length * 20 + 1000)
-        timeoutIds.push(userEndId)
-      }, 9000 + questionHints[0].tips.reduce((acc, tip) => acc + tip.length * 5, 0))
-      timeoutIds.push(userStartId)
     }
     
     askQuestion()
@@ -219,11 +232,6 @@ const InterviewSession: NextPage = () => {
   const toggleMic = () => setMicEnabled(!micEnabled)
   const toggleVideo = () => {
     setVideoEnabled(!videoEnabled);
-    
-    // If we're enabling video and mic is disabled, also enable the mic
-    if (!videoEnabled && !micEnabled) {
-      setMicEnabled(true);
-    }
   }
   const toggleSidebar = () => setSidebarCollapsed(!sidebarCollapsed)
   const toggleHints = () => setShowHints(!showHints)
@@ -436,22 +444,28 @@ const InterviewSession: NextPage = () => {
                 
                 {/* Right column: User Video and Answer */}
                 <div className="w-full md:w-1/2 flex flex-col">
-                  {/* User Video */}
+                  {/* User Video - Always visible with audio prompt overlay */}
                   <div className="p-3 bg-gradient-to-br from-blue-50 to-slate-50 flex flex-col items-center justify-center">
                     <div className={`relative aspect-video w-full max-w-sm overflow-hidden rounded-xl shadow-md transition-all duration-300 ${
                       userSpeaking ? 'ring-2 ring-blue-500 shadow-lg' : ''
                     }`}>
-                      {videoEnabled ? (
-                        <video 
-                          ref={userVideoRef}
-                          className="w-full h-full object-cover"
-                          autoPlay
-                          playsInline
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                          <div className="bg-slate-700 p-3 rounded-full">
-                            <VideoOff className="w-8 h-8 text-white" />
+                      <video 
+                        ref={userVideoRef}
+                        src="int2.mp4"
+                        className="w-full h-full object-cover cursor-pointer"
+                        muted={!intervieweeAudioEnabled} 
+                        playsInline
+                        autoPlay={false}
+                        loop
+                        onClick={handleIntervieweeVideoClick}
+                      />
+                      {!intervieweeAudioEnabled && (
+                        <div 
+                          className="absolute inset-0 bg-black/20 flex items-center justify-center cursor-pointer z-10"
+                          onClick={handleIntervieweeVideoClick}
+                        >
+                          <div className="bg-black/70 text-white px-2 py-1 rounded-lg text-xs">
+                            Click to enable audio
                           </div>
                         </div>
                       )}

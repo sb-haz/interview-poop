@@ -25,12 +25,12 @@ const CONFIG = {
   INTERVIEWEE_VIDEO_DURATION: 10000,     // How long the interviewee video plays in ms
 
   // Text typing speeds
-  QUESTION_TYPING_DURATION: 3000,        // Total ms to type out the entire question
-  ANSWER_TYPING_DURATION: 9800,          // Total ms to type out the entire answer
+  QUESTION_TYPING_DURATION: 2000,        // Total ms to type out the entire question
+  ANSWER_TYPING_DURATION: 3000,          // Total ms to type out the entire answer
 
   // Pause timings
-  PAUSE_AFTER_QUESTION: 1000,            // Pause after question before answer starts (1 second)
-  PAUSE_AFTER_ANSWER: 4000,              // Pause after answer before next question cycle
+  PAUSE_AFTER_QUESTION: 2500,            // Pause after question before answer starts (1 second)
+  PAUSE_AFTER_ANSWER: 1000,              // Pause after answer before next question cycle
 
   // Advanced settings
   AUTO_RECORD: true,                     // Auto-record the session
@@ -52,13 +52,13 @@ const mockQuestions: {
 
 // Fixed interview responses
 const mockAnswers = [
-  "Jakie są twoje słabe strony?Jakie są twoje słabe strony?Jakie są twoje słabe strony?",
+  "Jedną z moich słabszych stron jest zbytnie skupianie się na detalach",
 ];
 
 const InterviewSession: NextPage = () => {
   // Core state variables
-  const interviewerSpeaking = true // Always speaking
-  const userSpeaking = true // Always speaking
+  const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(false)
+  const [userSpeaking, setUserSpeaking] = useState<boolean>(false)
   const [interviewerTranscript, setInterviewerTranscript] = useState<string>('')
   const [userTranscript, setUserTranscript] = useState<string>('')
   const [interviewerName] = useState<string>("AI Interviewer")
@@ -96,18 +96,82 @@ const InterviewSession: NextPage = () => {
     }
   }, [callActive, isPaused])
 
-  // Set up continuous video playback
+  // Set up continuous video playback and text typing effects
   useEffect(() => {
-    // Display full question and answer immediately
-    setInterviewerTranscript(mockQuestions[currentQuestionIndex].text)
-    setUserTranscript(mockAnswers[currentQuestionIndex])
+    if (!callActive || isPaused) return
     
     // Ensure videos play continuously
     if (videoRef.current && userVideoRef.current) {
       videoRef.current.play().catch(e => console.error("Interviewer video play error:", e))
       userVideoRef.current.play().catch(e => console.error("User video play error:", e))
     }
-  }, [currentQuestionIndex])
+    
+    const timeoutIds: NodeJS.Timeout[] = []
+    
+    // Reset transcripts and speaking states
+    setInterviewerTranscript('')
+    setUserTranscript('')
+    setInterviewerSpeaking(true) // Initially speaking
+    setUserSpeaking(false)
+    
+    // Get current question and answer
+    const question = mockQuestions[currentQuestionIndex].text
+    const answer = mockAnswers[currentQuestionIndex]
+    
+    // Type out question letter by letter
+    const questionLetters = question.split('')
+    const letterTypingDelay = CONFIG.QUESTION_TYPING_DURATION / questionLetters.length
+    
+    questionLetters.forEach((letter, index) => {
+      const id = setTimeout(() => {
+        if (!callActive || isPaused) return
+        setInterviewerTranscript(prev => prev + letter)
+      }, index * letterTypingDelay)
+      timeoutIds.push(id)
+    })
+    
+    // After question is typed, stop interviewer speaking
+    const interviewerDoneId = setTimeout(() => {
+      setInterviewerSpeaking(false)
+    }, CONFIG.QUESTION_TYPING_DURATION)
+    timeoutIds.push(interviewerDoneId)
+    
+    // After question is typed, wait for pause and then type answer
+    const pauseId = setTimeout(() => {
+      // Start user speaking
+      setUserSpeaking(true)
+      
+      // Type out answer letter by letter
+      const answerLetters = answer.split('')
+      const answerTypingDelay = CONFIG.ANSWER_TYPING_DURATION / answerLetters.length
+      
+      answerLetters.forEach((letter, index) => {
+        const id = setTimeout(() => {
+          if (!callActive || isPaused) return
+          setUserTranscript(prev => prev + letter)
+        }, index * answerTypingDelay)
+        timeoutIds.push(id)
+      })
+      
+      // After answer is typed, stop user speaking
+      const userDoneId = setTimeout(() => {
+        setUserSpeaking(false)
+      }, CONFIG.ANSWER_TYPING_DURATION)
+      timeoutIds.push(userDoneId)
+      
+      // After answer is typed, move to next question
+      const nextQuestionId = setTimeout(() => {
+        setCurrentQuestionIndex(prev => (prev + 1) % mockQuestions.length)
+      }, CONFIG.ANSWER_TYPING_DURATION + CONFIG.PAUSE_AFTER_ANSWER)
+      timeoutIds.push(nextQuestionId)
+      
+    }, CONFIG.QUESTION_TYPING_DURATION + CONFIG.PAUSE_AFTER_QUESTION)
+    timeoutIds.push(pauseId)
+    
+    return () => {
+      timeoutIds.forEach(id => clearTimeout(id))
+    }
+  }, [currentQuestionIndex, callActive, isPaused])
 
   // Format time for display
   const formatTime = (ms: number) => {

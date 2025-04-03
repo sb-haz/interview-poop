@@ -62,7 +62,7 @@ const mockQuestions: {
 
 // Fixed interview responses
 const mockAnswers = [
-  "Yes, at my previous company we migrated from on-prem to AWS over about 6 months. We primarily used ECS for containerization, RDS for databases, and S3 for storage. The main challenge was ensuring zero downtime, which we solved with a phased approach using Route 53 for traffic management.",
+  "Yes, at my previous company we migrated from on-prem to AWS over about 6 months. We primarily used ECS for containerization, RDS for databases, and S3 for storage.",
   "When I encountered a slow application, I first profiled it to identify bottlenecks. The main issue was inefficient database queries causing high load times. I implemented database indexing, query optimization, and added Redis caching for frequently accessed data. This reduced load times by 70%.",
   "For a high-traffic e-commerce platform, I'd design a microservice architecture with separate services for product catalog, user management, orders, and payments. I'd ensure horizontal scalability using container orchestration, implement API gateways for routing, and use event-driven communication for service decoupling."
 ];
@@ -460,7 +460,7 @@ const InterviewSession: NextPage = () => {
             <div className="relative aspect-square w-full max-w-xs max-h-full overflow-hidden rounded-xl shadow-md transition-all duration-300">
               <video
                 ref={userVideoRef}
-                src="female1.mp4"
+                src="int2.mp4"
                 className="w-full h-full object-cover"
                 muted
                 playsInline

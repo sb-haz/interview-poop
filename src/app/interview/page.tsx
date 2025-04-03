@@ -25,7 +25,7 @@ const CONFIG = {
   INTERVIEWEE_VIDEO_DURATION: 10000,     // How long the interviewee video plays in ms
 
   // Text typing speeds
-  QUESTION_TYPING_DURATION: 7300,        // Total ms to type out the entire question
+  QUESTION_TYPING_DURATION: 3000,        // Total ms to type out the entire question
   ANSWER_TYPING_DURATION: 9800,          // Total ms to type out the entire answer
 
   // Pause timings
@@ -44,33 +44,21 @@ const mockQuestions: {
   category: 'technical' | 'behavioral' | 'situational';
 }[] = [
     {
-      text: "Your CV mentions you led a migration to AWS. Can you tell us more about that experience and the challenges you faced?",
+      text: "Jakie są twoje słabe strony?",
       difficulty: 'medium',
-      category: 'technical'
-    },
-    {
-      text: "Describe a time when you had to optimize a slow-performing application. What approach did you take?",
-      difficulty: 'hard',
-      category: 'technical'
-    },
-    {
-      text: "How would you design a scalable microservice architecture for a high-traffic e-commerce platform?",
-      difficulty: 'hard',
       category: 'technical'
     }
   ];
 
 // Fixed interview responses
 const mockAnswers = [
-  "Yes, at my previous company we migrated from on-prem to AWS over about 6 months. We primarily used ECS for containerization, RDS for databases, and S3 for storage.",
-  "When I encountered a slow application, I first profiled it to identify bottlenecks. The main issue was inefficient database queries causing high load times. I implemented database indexing, query optimization, and added Redis caching for frequently accessed data. This reduced load times by 70%.",
-  "For a high-traffic e-commerce platform, I'd design a microservice architecture with separate services for product catalog, user management, orders, and payments. I'd ensure horizontal scalability using container orchestration, implement API gateways for routing, and use event-driven communication for service decoupling."
+  "Jakie są twoje słabe strony?Jakie są twoje słabe strony?Jakie są twoje słabe strony?",
 ];
 
 const InterviewSession: NextPage = () => {
   // Core state variables
-  const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(false)
-  const [userSpeaking, setUserSpeaking] = useState<boolean>(false)
+  const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(true)
+  const [userSpeaking, setUserSpeaking] = useState<boolean>(true)
   const [interviewerTranscript, setInterviewerTranscript] = useState<string>('')
   const [userTranscript, setUserTranscript] = useState<string>('')
   const [interviewerName] = useState<string>("AI Interviewer")
@@ -108,108 +96,25 @@ const InterviewSession: NextPage = () => {
     }
   }, [callActive, isPaused])
 
+  // Set up continuous video playback
+  useEffect(() => {
+    // Display full question and answer immediately
+    setInterviewerTranscript(mockQuestions[currentQuestionIndex].text)
+    setUserTranscript(mockAnswers[currentQuestionIndex])
+    
+    // Ensure videos play continuously
+    if (videoRef.current && userVideoRef.current) {
+      videoRef.current.play().catch(e => console.error("Interviewer video play error:", e))
+      userVideoRef.current.play().catch(e => console.error("User video play error:", e))
+    }
+  }, [currentQuestionIndex])
+
   // Format time for display
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
     const seconds = Math.floor((ms % 60000) / 1000)
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
   }
-
-  // Simulate interview flow
-  useEffect(() => {
-    if (!callActive || isPaused) return
-
-    const timeoutIds: NodeJS.Timeout[] = []
-
-    // Reset for new question cycle
-    const askQuestion = async () => {
-      // Reset states
-      setInterviewerTranscript('')
-      setUserTranscript('')
-
-      // Interviewer asks question
-      setInterviewerSpeaking(true)
-      const question = mockQuestions[currentQuestionIndex % mockQuestions.length].text
-
-      // Play interviewer video
-      if (videoRef.current) {
-        videoRef.current.currentTime = 0
-        videoRef.current.play()
-      }
-
-      // Type out question word by word
-      const words = question.split(' ')
-      const wordTypingDelay = CONFIG.QUESTION_TYPING_DURATION / words.length
-      for (let i = 0; i <= words.length; i++) {
-        if (!callActive || isPaused) break
-        const id = setTimeout(() => {
-          setInterviewerTranscript(words.slice(0, i).join(' '))
-        }, i * wordTypingDelay)
-        timeoutIds.push(id)
-      }
-
-      // Interviewer finishes speaking after typing is complete
-      const speakingEndId = setTimeout(() => {
-        setInterviewerSpeaking(false)
-
-        // Pause interviewer video
-        if (videoRef.current) {
-          videoRef.current.pause()
-        }
-
-        // Schedule interviewee to start speaking after PAUSE_AFTER_QUESTION
-        const userStartId = setTimeout(() => {
-          setUserSpeaking(true)
-
-          // Play interviewee video
-          if (userVideoRef.current) {
-            userVideoRef.current.currentTime = 0
-            userVideoRef.current.play()
-          }
-
-          const userResponse = mockAnswers[currentQuestionIndex % mockAnswers.length]
-
-          // Type out user response word by word
-          const userWords = userResponse.split(' ')
-          const userWordDelay = CONFIG.ANSWER_TYPING_DURATION / userWords.length
-          for (let i = 0; i <= userWords.length; i++) {
-            const userId = setTimeout(() => {
-              if (!callActive || isPaused) return
-              setUserTranscript(userWords.slice(0, i).join(' '))
-            }, i * userWordDelay)
-            timeoutIds.push(userId)
-          }
-
-          // User finishes speaking
-          const userEndId = setTimeout(() => {
-            setUserSpeaking(false)
-
-            // Pause interviewee video
-            if (userVideoRef.current) {
-              userVideoRef.current.pause()
-            }
-
-            // Wait configured time before starting next question
-            const restartId = setTimeout(() => {
-              setCurrentQuestionIndex(prev => (prev + 1) % mockQuestions.length)
-              askQuestion() // Restart the cycle
-            }, CONFIG.PAUSE_AFTER_ANSWER)
-            timeoutIds.push(restartId)
-          }, CONFIG.INTERVIEWEE_VIDEO_DURATION)
-          timeoutIds.push(userEndId)
-        }, CONFIG.PAUSE_AFTER_QUESTION)
-        timeoutIds.push(userStartId)
-      }, CONFIG.INTERVIEWER_VIDEO_DURATION)
-      timeoutIds.push(speakingEndId)
-    }
-
-    askQuestion()
-
-    // Cleanup function
-    return () => {
-      timeoutIds.forEach(id => clearTimeout(id))
-    }
-  }, [callActive, isPaused, currentQuestionIndex])
 
   // UI Control Functions
   const endCall = () => {
@@ -224,10 +129,7 @@ const InterviewSession: NextPage = () => {
 
   const repeatQuestion = () => {
     // Restart the current question
-    setCallActive(false)
-    setTimeout(() => {
-      setCallActive(true)
-    }, 100)
+    setCurrentQuestionIndex(prev => prev)
   }
 
   // Define the color scheme
@@ -404,7 +306,7 @@ const InterviewSession: NextPage = () => {
             <div className="relative aspect-square w-full max-w-xs max-h-full overflow-hidden rounded-xl shadow-md transition-all duration-300">
               <video
                 ref={videoRef}
-                src="female1.mp4"
+                src="f1.mp4"
                 className="w-full h-full object-cover"
                 muted
                 playsInline
@@ -464,7 +366,7 @@ const InterviewSession: NextPage = () => {
                 className="w-full h-full object-cover"
                 muted
                 playsInline
-                autoPlay={false}
+                autoPlay
                 loop
               />
               <div className="absolute bottom-2 left-2">
@@ -492,7 +394,7 @@ const InterviewSession: NextPage = () => {
           <div className="px-3 pb-3 h-40">
             <div className="bg-gradient-to-br from-slate-50 to-white p-3 rounded-xl w-full h-full overflow-y-auto hide-scrollbar border-blue-50 border shadow-sm">
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-medium text-slate-400 text-xs uppercase tracking-wide">Your Response</h3>
+                <h3 className="font-medium text-slate-400 text-xs mb-1 uppercase tracking-wide">Your Response</h3>
                 {userSpeaking && (
                   <div className="flex items-center gap-1 bg-green-100 px-2 py-0.5 rounded-full">
                     <Mic className="w-2.5 h-2.5 text-green-600" />

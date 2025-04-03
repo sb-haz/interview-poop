@@ -57,8 +57,8 @@ const mockAnswers = [
 
 const InterviewSession: NextPage = () => {
   // Core state variables
-  const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(true)
-  const [userSpeaking, setUserSpeaking] = useState<boolean>(true)
+  const interviewerSpeaking = true // Always speaking
+  const userSpeaking = true // Always speaking
   const [interviewerTranscript, setInterviewerTranscript] = useState<string>('')
   const [userTranscript, setUserTranscript] = useState<string>('')
   const [interviewerName] = useState<string>("AI Interviewer")

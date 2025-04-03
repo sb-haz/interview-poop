@@ -32,37 +32,37 @@ const TEXT = {
   SESSION_DURATION: "30 minutes",
   
   // Section headers
-  INTERVIEW_INFO: "Interview Info",
-  INTERVIEW_QUESTIONS: "Interview Questions",
-  INTERVIEWER_QUESTION: "Interviewer's Question",
-  USER_RESPONSE: "Your Response",
+  INTERVIEW_INFO: "Informajce",
+  INTERVIEW_QUESTIONS: "Pytania",
+  INTERVIEWER_QUESTION: "Pytanie rekrutera",
+  USER_RESPONSE: "Twoja odpowiedź",
   
   // Labels
-  LABEL_TYPE: "Type:",
-  LABEL_DURATION: "Duration:",
-  LABEL_ELAPSED: "Elapsed:",
-  LABEL_PROGRESS: "Progress:",
-  LABEL_INTERVIEWER: "Interviewer:",
-  LABEL_QUESTION: "Question",
+  LABEL_TYPE: "Typ:",
+  LABEL_DURATION: "Czas trwania:",
+  LABEL_ELAPSED: "Mineło:",
+  LABEL_PROGRESS: "Postęp:",
+  LABEL_INTERVIEWER: "Rekruter:",
+  LABEL_QUESTION: "Pytanie",
   
   // Status indicators
   STATUS_LIVE: "Live",
-  STATUS_PAUSED: "Paused",
-  STATUS_RECORDING: "Recording",
-  STATUS_SPEAKING: "Speaking",
+  STATUS_PAUSED: "Pauza",
+  STATUS_RECORDING: "Nagrywanie",
+  STATUS_SPEAKING: "Mówienie",
   
   // Default messages
   DEFAULT_QUESTION: "Interviewer is about to ask a question...",
-  DEFAULT_ANSWER: "Waiting for your response...",
+  DEFAULT_ANSWER: "Czekam na odpowiedź...",
   
   // Other text
-  OF: "of",
+  OF: "z",
 };
 
 // Constants
-const INTERVIEWER_NAME = "AI Interviewer";
-const INTERVIEWER_ROLE = "Senior Tech Lead";
-const INTERVIEW_TYPE = "Technical";
+const INTERVIEWER_NAME = "AI Rekruter";
+const INTERVIEWER_ROLE = "Marta";
+const INTERVIEW_TYPE = "Techniczne";
 
 const InterviewSession = () => {
   const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(false)

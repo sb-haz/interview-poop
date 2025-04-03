@@ -18,7 +18,7 @@ const mockQuestions = [
   {
     text: "Jakie są twoje słabe strony?",
     difficulty: 'medium' as const,
-    category: 'technical' as const
+    category: 'techniczne' as const
   }
 ];
 
@@ -62,7 +62,7 @@ const TEXT = {
 // Constants
 const INTERVIEWER_NAME = "AI Rekruter";
 const INTERVIEWER_ROLE = "Marta";
-const INTERVIEW_TYPE = "Techniczne";
+const INTERVIEW_TYPE = "Techniczna";
 
 const InterviewSession = () => {
   const [interviewerSpeaking, setInterviewerSpeaking] = useState<boolean>(false)
@@ -250,7 +250,7 @@ const InterviewSession = () => {
       <div className="flex-1 flex flex-col overflow-hidden mx-2 my-2">
         <div className={`${colorScheme.cardBg} shadow-sm py-2 px-4 mx-2 mt-2 rounded-xl flex items-center justify-between ${colorScheme.border} border`}>
           <div className="flex items-center gap-2">
-            <h1 className={`text-sm font-semibold ${colorScheme.text}`}>{INTERVIEW_TYPE} Interview</h1>
+            <h1 className={`text-sm font-semibold ${colorScheme.text}`}>{INTERVIEW_TYPE} Rozmowa</h1>
             <div className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-medium rounded-full flex items-center gap-1">
               <div className="w-1 h-1 bg-blue-600 rounded-full animate-pulse"></div>
               <span>{TEXT.STATUS_LIVE}</span>
@@ -359,7 +359,7 @@ const InterviewSession = () => {
                       <div className="absolute bottom-2 left-2">
                         <div className="px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-white font-medium">You</span>
+                            <span className="text-xs text-white font-medium">Ty</span>
                           </div>
                         </div>
                       </div>
